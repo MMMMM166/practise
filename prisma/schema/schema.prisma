@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URI")
+}
+
+model Room {
+  id           String    @id @default(uuid())
+  roomName     String    @unique
+  status       String    @default("waiting") // waiting | active | finished | abandoned
+  gameType     String    @default("classic") @map("game_type") // classic | custom
+  isVsAi       Boolean   @default(false) @map("is_vs_ai")
+  aiDifficulty String?   @default("medium") @map("ai_difficulty")
+  startTime    DateTime  @default(now()) @map("start_time")
+  endTime      DateTime? @map("end_time") 
+  
+  // Relations
+  user1Id    String    @map("user1_id")
+  user1      User?    @relation("User1Rooms", fields: [user1Id], references: [id])
+  
+  user2Id    String?   @map("user2_id")
+  user2      User?   @relation("User2Rooms", fields: [user2Id], references: [id])
+  
+  @@map("rooms")
+}
+
+model User {
+  id         String    @id @default(uuid()) @map("user_id")
+  userName   String    @unique
+  password   String    @map("password_hash")
+  email      String?   @unique
+  role       Role[]    @default([USER])
+  wins       Int       @default(0)
+  losses     Int       @default(0)
+  draws      Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastLogin  DateTime? @map("last_login")
+  isActive   Boolean   @default(true) @map("is_active")
+  
+  // Relations
+
+  roomsAsU1  Room[]    @relation("User1Rooms")
+  roomsAsU2  Room[]    @relation("User2Rooms")
+  Token Token[]
+
+  @@map("users")
+
+}
+
+model Token {
+  token String @id @default(uuid())
+  expires DateTime
+  userId String @map("user_id")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tokens")
+}
+
+
+
+
+enum Role {
+  ADMIN
+  USER
+}
